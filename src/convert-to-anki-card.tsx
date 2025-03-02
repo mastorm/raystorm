@@ -1,4 +1,15 @@
-import { Action, ActionPanel, AI, Detail, Form, getSelectedText, List, showToast } from "@raycast/api";
+import {
+  Action,
+  ActionPanel,
+  AI,
+  Detail,
+  Form,
+  getSelectedText,
+  launchCommand,
+  LaunchType,
+  List,
+  showToast,
+} from "@raycast/api";
 import { showFailureToast, usePromise } from "@raycast/utils";
 
 function preparePrompt(selectedText: string) {
@@ -64,6 +75,22 @@ function cardToMarkdown(card: AnkiCard) {
 export default function Command() {
   const cards = usePromise(ankiCardFromSelection);
 
+  const handleCreateAnkiCard = (card: AnkiCard) => {
+    return () => {
+      console.log(card);
+      launchCommand({
+        name: "addCard",
+        extensionName: "anki",
+        ownerOrAuthorName: "anton-suprun",
+        type: LaunchType.UserInitiated,
+        arguments: {
+          field_Front: card.question,
+          field_Back: card.answer,
+        },
+      });
+    };
+  };
+
   return (
     <List isShowingDetail={true} isLoading={cards.isLoading}>
       {cards.data &&
@@ -71,7 +98,13 @@ export default function Command() {
           <List.Item
             key={i}
             title={c.question}
-            detail={<List.Item.Detail markdown={cardToMarkdown(c)}></List.Item.Detail>}
+            detail={<List.Item.Detail markdown={cardToMarkdown(c)} />}
+            actions={
+              <ActionPanel>
+                <Action.CopyToClipboard content={`${c.question}\n\n${c.answer}`} />
+                <Action title="Create Anki Card" onAction={handleCreateAnkiCard(c)} />
+              </ActionPanel>
+            }
           />
         ))}
     </List>
